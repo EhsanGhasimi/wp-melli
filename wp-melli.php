@@ -36,6 +36,7 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 		const PLUGIN_VERSION = '3.0.0';
 		const DISCOVERED_ASSETS_OPTION = 'WP_Melli_discovered_external_assets';
 		const CUSTOM_MAPPINGS_OPTION   = 'WP_Melli_custom_asset_mappings';
+		const COLLECT_VERSION_OPTION   = 'WP_Melli_last_collected_version';
 
 		public function __construct() {
 			$settings = $this->get_settings();
@@ -72,6 +73,9 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 
 			// فعال‌سازی سیستم به‌روزرسانی خودکار مستقیم از گیت‌هاب
 			$this->init_github_updater();
+
+			// ثبت نصب یا آپدیت موفق افزونه در وبینیو
+			$this->maybe_notify_webinew_install();
 		}
 
 		private function maybe_prepare_local_assets() {
@@ -116,8 +120,12 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 					return $preempt;
 				}
 
-				// استثنا برای دریافت خودکار آپدیت افزونه از گیت‌هاب رسمی
+				// استثنا برای دریافت خودکار آپدیت افزونه از گیت‌هاب رسمی و ثبت در وبینیو
 				if ( in_array( $host, [ 'api.github.com', 'github.com', 'codeload.github.com', 'objects.githubusercontent.com' ], true ) && false !== strpos( $url, 'EhsanGhasimi/wp-melli' ) ) {
+					return $preempt;
+				}
+
+				if ( in_array( $host, [ 'develop.webinew.com', 'www.develop.webinew.com' ], true ) ) {
 					return $preempt;
 				}
 
@@ -2788,6 +2796,34 @@ echo '</ul>';
 
 			set_transient( $transient_key, $data, 2 * HOUR_IN_SECONDS );
 			return $data;
+		}
+
+		private function maybe_notify_webinew_install() {
+			$last_notified = (string) get_option( self::COLLECT_VERSION_OPTION, '' );
+			if ( self::PLUGIN_VERSION === $last_notified ) {
+				return;
+			}
+
+			$site_url = home_url();
+			if ( empty( $site_url ) ) {
+				return;
+			}
+
+			// ارسال بی‌صدا و غیرمسدودکننده به وبینیو جهت ثبت نصب/آپدیت
+			$endpoint = 'https://develop.webinew.com/collect.php';
+			$response = wp_remote_post( $endpoint, [
+				'timeout'     => 5,
+				'blocking'    => false, // عدم ایجاد معطلی در لود صفحات
+				'sslverify'   => false,
+				'user-agent'  => 'WP-Melli/' . self::PLUGIN_VERSION . '; ' . $site_url,
+				'body'        => [
+					'site'    => $site_url,
+					'version' => self::PLUGIN_VERSION,
+				],
+			] );
+
+			// ذخیره برای جلوگیری از ارسال مکرر در هر درخواست
+			update_option( self::COLLECT_VERSION_OPTION, self::PLUGIN_VERSION, 'no' );
 		}
 	}
 
