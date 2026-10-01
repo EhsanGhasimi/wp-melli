@@ -1,0 +1,5 @@
+/* Ghateino local Vazirmatn */
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/vazirmatn/Vazirmatn-Regular.woff2') format('woff2');}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/vazirmatn/Vazirmatn-Medium.woff2') format('woff2');}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/vazirmatn/Vazirmatn-Bold.woff2') format('woff2');}
+.ghateino-font-vazirmatn{font-family:'Vazirmatn',sans-serif;}
