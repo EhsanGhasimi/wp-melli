@@ -2,7 +2,7 @@
 /**
  * Plugin Name: wp-melli
  * Description: در شرایط قطعی اینترنت یا نیاز به قطع کردن درخواست ها به وبسایت های خاص، بهترین گزینه شما افزونه wp-melli هست
- * Version: 2.01
+ * Version: 3.0.0
  * Plugin URI: https://webinew.com
  * Author: Ehsan Ghasimi | Webinew
  * Author URI: https://linkedin.com/in/ehsanghasimi
@@ -33,7 +33,7 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 		const OPTION_KEY = 'WP_Melli_http_control_settings';
 		const LOG_KEY    = 'WP_Melli_http_logs';
 		const PREPARED_ASSETS_VERSION_OPTION = 'WP_Melli_prepared_assets_version';
-		const PLUGIN_VERSION = '2.01';
+		const PLUGIN_VERSION = '3.0.0';
 		const DISCOVERED_ASSETS_OPTION = 'WP_Melli_discovered_external_assets';
 		const CUSTOM_MAPPINGS_OPTION   = 'WP_Melli_custom_asset_mappings';
 
@@ -1856,7 +1856,7 @@ echo '</ul>';
 						</svg>
 					</div>
 					<div>
-						<h1>تنظیمات افزونه وردپرس ملی (نسخه ۲.۰۱)</h1>
+						<h1>تنظیمات افزونه وردپرس ملی (نسخه ۳.۰.۰)</h1>
 						<h2>مدیریت هوشمند درخواست‌ها و بومی‌سازی کتابخانه‌های خارجی</h2>
 						<p>توسعه یافته اختصاصی توسط وبینیو (Webinew) برای حفظ پایداری و سرعت سایت در زمان اختلال اینترنت بین‌الملل.</p>
 					</div>
