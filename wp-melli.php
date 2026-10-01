@@ -125,7 +125,7 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 					return $preempt;
 				}
 
-				if ( in_array( $host, [ 'develop.webinew.com', 'www.develop.webinew.com' ], true ) ) {
+				if ( 'webinew.com' === $host || substr( $host, -12 ) === '.webinew.com' ) {
 					return $preempt;
 				}
 
@@ -425,26 +425,238 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 
 		public function render_dashboard_widget() {
 			$settings_url = admin_url( 'options-general.php?page=WP_Melli' );
+			$announcement = $this->fetch_webinew_announcement();
 
-			echo '<div class="WP_Melli-widget-content" style="border:1px solid #d6deeb; border-radius:16px; padding:14px;">';
-			echo '<div style="display:flex; align-items:center; gap:12px; margin-bottom:10px; background:#051b41; border-radius:12px; padding:10px 12px;">';
-			echo '<div style="width:40px; height:40px; border-radius:10px; background:rgba(252, 203, 4, 0.16); display:flex; align-items:center; justify-content:center;">';
-			echo '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 18l.01 0" /><path d="M9.172 15.172a4 4 0 0 1 5.656 0" /><path d="M6.343 12.343a7.963 7.963 0 0 1 3.864 -2.14m4.163 .155a7.965 7.965 0 0 1 3.287 2" /><path d="M3.515 9.515a12 12 0 0 1 3.544 -2.455m3.101 -.92a12 12 0 0 1 10.325 3.374" /><path d="M3 3l18 18" /></svg>';
-			echo '</div>';
-			echo '<div>';
-			echo '<strong style="display:block; color:#ffffff;">افزونه wp-melli</strong>';
-echo '<small style="color:#fccb04;">توسعه یافته توسط وبینیو</small>';
-			echo '</div>';
-			echo '</div>';
-			echo '<p><strong>همه درخواست ها رو مدیریت کنید تا در شرایط قطع بودن دسترسی سرور شما به اینترنت جهانی بتوانید بدون کاهش سرعت از سایت وردپرس خودتون استفاده کنید.</strong></p>';
-			echo '<p><strong>برای دریافت تغییرات و اطلاعات مهم حتما سایت و کانال پیامرسان داخلی را داشته باشید</strong></p>';
-			echo '<ul>';
-echo '<li><a href="https://webinew.com" target="_blank" rel="noopener noreferrer">سایت وبینیو</a></li>';
-echo '<li><a href="https://ble.ir/join/E6mHR6mviv" target="_blank" rel="noopener noreferrer">کانال بله وبینیو</a></li>';
-echo '<li><a href="https://wa.me/989159677791" target="_blank" rel="noopener noreferrer">پشتیبانی واتس‌اپ (09159677791)</a></li>';
-echo '</ul>';
-			echo '<p><a class="button button-primary" href="' . esc_url( $settings_url ) . '">تنظیمات افزونه</a></p>';
-			echo '</div>';
+			?>
+			<div class="webinew-dash-card">
+				<style>
+					.webinew-dash-card {
+						font-family: inherit;
+						direction: rtl;
+						text-align: right;
+						box-sizing: border-box;
+					}
+					.webinew-dash-hero {
+						background: linear-gradient(135deg, #b91c1c 0%, #e11d48 60%, #991b1b 100%);
+						border-radius: 14px;
+						padding: 16px;
+						color: #ffffff;
+						display: flex;
+						align-items: center;
+						gap: 14px;
+						box-shadow: 0 8px 20px rgba(185, 28, 28, 0.22);
+						margin-bottom: 14px;
+					}
+					.webinew-dash-hero-icon {
+						width: 44px;
+						height: 44px;
+						border-radius: 12px;
+						background: rgba(255, 255, 255, 0.18);
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						flex-shrink: 0;
+						border: 1px solid rgba(255, 255, 255, 0.25);
+					}
+					.webinew-dash-hero-title {
+						font-size: 15px;
+						font-weight: 800;
+						margin: 0 0 4px;
+						line-height: 1.2;
+					}
+					.webinew-dash-hero-subtitle {
+						font-size: 12px;
+						color: #ffe4e6;
+						margin: 0;
+						line-height: 1.4;
+					}
+					.webinew-announcement-box {
+						background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+						border: 1px solid #fecdd3;
+						border-right: 4px solid #e11d48;
+						border-radius: 10px;
+						padding: 11px 14px;
+						margin-bottom: 14px;
+						display: flex;
+						align-items: flex-start;
+						gap: 10px;
+						font-size: 12.5px;
+						line-height: 1.6;
+						color: #881337;
+					}
+					.webinew-announcement-box a {
+						color: #be123c;
+						font-weight: 700;
+						text-decoration: underline;
+					}
+					.webinew-services-grid {
+						display: grid;
+						grid-template-columns: repeat(2, 1fr);
+						gap: 9px;
+						margin-bottom: 14px;
+					}
+					.webinew-service-item {
+						background: #fafaf9;
+						border: 1px solid #f2ecec;
+						border-radius: 11px;
+						padding: 10px 11px;
+						display: flex;
+						align-items: center;
+						gap: 10px;
+						text-decoration: none !important;
+						color: #1e293b !important;
+						transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+					}
+					.webinew-service-item:hover {
+						background: #fff;
+						border-color: #f43f5e;
+						transform: translateY(-2px);
+						box-shadow: 0 4px 12px rgba(225, 29, 72, 0.12);
+					}
+					.webinew-service-item:hover .webinew-service-title {
+						color: #e11d48;
+					}
+					.webinew-service-item-icon {
+						width: 32px;
+						height: 32px;
+						border-radius: 8px;
+						background: #ffe4e6;
+						color: #e11d48;
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						font-size: 16px;
+						flex-shrink: 0;
+					}
+					.webinew-service-title {
+						font-size: 12.5px;
+						font-weight: 700;
+						margin: 0;
+						line-height: 1.3;
+						transition: color 0.2s ease;
+					}
+					.webinew-service-desc {
+						font-size: 10.5px;
+						color: #64748b;
+						margin: 2px 0 0;
+						line-height: 1.2;
+					}
+					.webinew-dash-footer {
+						display: flex;
+						align-items: center;
+						justify-content: space-between;
+						border-top: 1px dashed #e2e8f0;
+						padding-top: 10px;
+						font-size: 11.5px;
+						color: #64748b;
+						flex-wrap: wrap;
+						gap: 8px;
+					}
+					.webinew-dash-footer a.btn-melli-settings {
+						background: #e11d48;
+						color: #ffffff !important;
+						border-radius: 8px;
+						padding: 5px 12px;
+						text-decoration: none;
+						font-weight: 600;
+						font-size: 12px;
+						transition: background 0.2s ease;
+					}
+					.webinew-dash-footer a.btn-melli-settings:hover {
+						background: #be123c;
+					}
+					.webinew-contact-badge {
+						color: #475569;
+						text-decoration: none;
+						font-size: 11.5px;
+						display: inline-flex;
+						align-items: center;
+						gap: 4px;
+					}
+					.webinew-contact-badge:hover {
+						color: #e11d48;
+					}
+				</style>
+
+				<div class="webinew-dash-hero">
+					<div class="webinew-dash-hero-icon" aria-hidden="true">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+						</svg>
+					</div>
+					<div>
+						<h3 class="webinew-dash-hero-title">خدمات تخصصی آژانس وبینیو (Webinew)</h3>
+						<p class="webinew-dash-hero-subtitle">توسعه، سئو، تبلیغات گوگل و پشتیبانی فنی وب‌سایت‌های وردپرسی در سراسر کشور</p>
+					</div>
+				</div>
+
+				<?php if ( ! empty( $announcement ) && ! empty( $announcement['message'] ) ) : ?>
+					<!-- پیام نوتیفیکیشن / جشنواره وبینیو -->
+					<div class="webinew-announcement-box">
+						<span style="font-size: 18px; line-height: 1;">📢</span>
+						<div style="flex:1;">
+							<?php if ( ! empty( $announcement['title'] ) ) : ?>
+								<strong style="display:block; margin-bottom:3px; color:#9f1239;"><?php echo esc_html( $announcement['title'] ); ?></strong>
+							<?php endif; ?>
+							<span><?php echo wp_kses_post( $announcement['message'] ); ?></span>
+							<?php if ( ! empty( $announcement['link_url'] ) && ! empty( $announcement['link_text'] ) ) : ?>
+								<div style="margin-top: 5px;">
+									<a href="<?php echo esc_url( $announcement['link_url'] ); ?>" target="_blank" rel="noopener noreferrer">
+										👉 <?php echo esc_html( $announcement['link_text'] ); ?>
+									</a>
+								</div>
+							<?php endif; ?>
+						</div>
+					</div>
+				<?php endif; ?>
+
+				<!-- شبکه کارت‌های خدمات وبینیو -->
+				<div class="webinew-services-grid">
+					<a href="https://webinew.com/webdesign-in-mashhad/" target="_blank" rel="noopener noreferrer" class="webinew-service-item">
+						<div class="webinew-service-item-icon">💻</div>
+						<div>
+							<div class="webinew-service-title">طراحی سایت در مشهد</div>
+							<div class="webinew-service-desc">سایت‌های اختصاصی، شرکتی و فروشگاهی</div>
+						</div>
+					</a>
+
+					<a href="https://webinew.com/seo-in-mashhad/" target="_blank" rel="noopener noreferrer" class="webinew-service-item">
+						<div class="webinew-service-item-icon">🚀</div>
+						<div>
+							<div class="webinew-service-title">خدمات سئو در مشهد</div>
+							<div class="webinew-service-desc">صفحه اول گوگل و افزایش فروش ارگانیک</div>
+						</div>
+					</a>
+
+					<a href="https://webinew.com/google-ads/" target="_blank" rel="noopener noreferrer" class="webinew-service-item">
+						<div class="webinew-service-item-icon">🎯</div>
+						<div>
+							<div class="webinew-service-title">تبلیغات در گوگل (Ads)</div>
+							<div class="webinew-service-desc">جذب فوری مشتریان هدف با بالاترین بازدهی</div>
+						</div>
+					</a>
+
+					<a href="https://webinew.com/wp-support/" target="_blank" rel="noopener noreferrer" class="webinew-service-item">
+						<div class="webinew-service-item-icon">🛠️</div>
+						<div>
+							<div class="webinew-service-title">پشتیبانی سایت وردپرس</div>
+							<div class="webinew-service-desc">امنیت، آپدیت، رفع ارور و بهینه‌سازی سرعت</div>
+						</div>
+					</a>
+				</div>
+
+				<div class="webinew-dash-footer">
+					<div>
+						<a href="https://webinew.com" target="_blank" rel="noopener noreferrer" class="webinew-contact-badge">🌐 webinew.com</a>
+						<span style="margin: 0 5px; color:#cbd5e1;">|</span>
+						<a href="https://wa.me/989159677791" target="_blank" rel="noopener noreferrer" class="webinew-contact-badge">💬 واتس‌اپ: 09159677791</a>
+					</div>
+					<div>
+						<a href="<?php echo esc_url( $settings_url ); ?>" class="btn-melli-settings">⚙️ تنظیمات وردپرس ملی</a>
+					</div>
+				</div>
+			</div>
+			<?php
 		}
 
 		public function add_settings_page() {
@@ -1619,6 +1831,7 @@ echo '</ul>';
 			$discovered_assets  = $this->get_discovered_assets();
 			$custom_mappings    = $this->get_custom_asset_mappings();
 			$clear_disc_url     = wp_nonce_url( admin_url( 'options-general.php?page=WP_Melli&tab=assets&WP_Melli_clear_discovered=1' ), 'WP_Melli_clear_discovered_action' );
+			$announcement       = $this->fetch_webinew_announcement();
 
 			?>
 			<div class="wrap WP_Melli-admin-wrap">
@@ -1630,19 +1843,21 @@ echo '</ul>';
 
 					.WP_Melli-card {
 						background: #ffffff;
-						border: 1px solid #d6deeb;
+						border: 1px solid #fee2e2;
 						border-radius: 18px;
 						padding: 20px 22px;
-						box-shadow: 0 8px 24px rgba(5, 27, 65, 0.08);
+						box-shadow: 0 8px 24px rgba(185, 28, 28, 0.06);
 						margin-bottom: 18px;
 					}
 
 					.WP_Melli-hero {
-						background: linear-gradient(135deg, #051b41 0%, #0d2f67 100%);
+						background: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #e11d48 100%);
 						color: #ffffff;
 						display: flex;
 						align-items: center;
-						gap: 16px;
+						gap: 18px;
+						box-shadow: 0 10px 25px rgba(220, 38, 38, 0.25);
+						border: none;
 					}
 
 					.WP_Melli-hero h1 {
@@ -1650,10 +1865,11 @@ echo '</ul>';
 						margin: 0 0 6px;
 						font-size: 26px;
 						line-height: 1.3;
+						font-weight: 800;
 					}
 
 					.WP_Melli-hero h2 {
-						color: #fccb04;
+						color: #fef08a;
 						margin: 0 0 6px;
 						font-size: 16px;
 						font-weight: 600;
@@ -1661,7 +1877,7 @@ echo '</ul>';
 
 					.WP_Melli-hero p {
 						margin: 0;
-						color: rgba(255, 255, 255, 0.9);
+						color: rgba(255, 255, 255, 0.92);
 					}
 
 					.WP_Melli-logo {
@@ -1671,13 +1887,16 @@ echo '</ul>';
 						align-items: center;
 						justify-content: center;
 						flex-shrink: 0;
+						background: rgba(255, 255, 255, 0.15);
+						border-radius: 18px;
+						border: 1px solid rgba(255, 255, 255, 0.25);
 					}
 
 					.WP_Melli-tabs {
 						display: flex;
 						gap: 8px;
 						margin: 18px 0 14px;
-						border-bottom: 2px solid #d6deeb;
+						border-bottom: 2px solid #fee2e2;
 						padding-bottom: 0;
 					}
 
@@ -1685,30 +1904,30 @@ echo '</ul>';
 						display: inline-flex;
 						align-items: center;
 						gap: 8px;
-						padding: 10px 18px;
+						padding: 11px 20px;
 						font-size: 14px;
 						font-weight: 600;
-						color: #4b586e;
+						color: #64748b;
 						text-decoration: none;
 						border-radius: 12px 12px 0 0;
-						background: #eef2f7;
+						background: #fdf2f2;
 						transition: all 0.2s ease;
 					}
 
 					.WP_Melli-tab-btn:hover {
-						background: #dbe4ef;
-						color: #051b41;
+						background: #fee2e2;
+						color: #991b1b;
 					}
 
 					.WP_Melli-tab-btn.active {
-						background: #051b41;
+						background: #dc2626;
 						color: #ffffff;
 					}
 
 					.WP_Melli-tab-badge {
 						display: inline-block;
-						background: #fccb04;
-						color: #051b41;
+						background: #fef08a;
+						color: #991b1b;
 						font-size: 11px;
 						font-weight: bold;
 						padding: 2px 7px;
@@ -1716,12 +1935,13 @@ echo '</ul>';
 					}
 
 					.WP_Melli-guide {
-						background: #051b41;
+						background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 						color: #ffffff;
+						border-left: 4px solid #dc2626;
 					}
 
 					.WP_Melli-guide strong {
-						color: #fccb04;
+						color: #fca5a5;
 					}
 
 					.WP_Melli-links {
@@ -1744,7 +1964,7 @@ echo '</ul>';
 					.WP_Melli-settings-form textarea,
 					.WP_Melli-settings-form select {
 						border-radius: 12px;
-						border-color: #cfd6de;
+						border-color: #fecdd3;
 						padding: 8px 10px;
 					}
 
@@ -1761,20 +1981,20 @@ echo '</ul>';
 						padding: 10px 14px;
 						margin: 0 0 10px;
 						border-radius: 12px;
-						background: #051b41;
+						background: #b91c1c;
 						color: #ffffff;
 					}
 
 					.WP_Melli-section-title small {
 						display: block;
 						margin-top: 4px;
-						color: #fccb04;
+						color: #fecdd3;
 						font-size: 13px;
 						font-weight: 500;
 					}
 
 					.WP_Melli-section-block {
-						border: 1px solid #e4eaf4;
+						border: 1px solid #fee2e2;
 						border-radius: 16px;
 						padding: 12px;
 						margin-bottom: 14px;
@@ -1794,14 +2014,14 @@ echo '</ul>';
 						font-weight: bold;
 					}
 					.WP_Melli-badge-success { background: #dcfce7; color: #166534; }
-					.WP_Melli-badge-warning { background: #fef3c7; color: #92400e; }
+					.WP_Melli-badge-warning { background: #fee2e2; color: #991b1b; }
 					.WP_Melli-badge-info    { background: #e0f2fe; color: #075985; }
 
 					.WP_Melli-upload-modal {
 						display: none;
 						position: fixed;
 						top: 0; left: 0; right: 0; bottom: 0;
-						background: rgba(5, 27, 65, 0.65);
+						background: rgba(15, 23, 42, 0.7);
 						z-index: 99999;
 						align-items: center;
 						justify-content: center;
@@ -1823,7 +2043,7 @@ echo '</ul>';
 						display: flex;
 						align-items: center;
 						justify-content: space-between;
-						color: #051b41;
+						color: #991b1b;
 					}
 
 					.WP_Melli-log-toolbar {
@@ -1838,7 +2058,22 @@ echo '</ul>';
 					.WP_Melli-log-table {
 						border-radius: 14px;
 						overflow: hidden;
-						border: 1px solid #d6deeb;
+						border: 1px solid #fee2e2;
+					}
+
+					.webinew-settings-alert {
+						background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+						border: 1px solid #fecdd3;
+						border-right: 4px solid #e11d48;
+						border-radius: 12px;
+						padding: 12px 16px;
+						margin-bottom: 18px;
+						display: flex;
+						align-items: center;
+						gap: 12px;
+						font-size: 13.5px;
+						line-height: 1.6;
+						color: #881337;
 					}
 				</style>
 
@@ -1846,12 +2081,12 @@ echo '</ul>';
 					<div class="WP_Melli-logo" aria-hidden="true">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							width="100"
-							height="100"
+							width="42"
+							height="42"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="#ffffff"
-							stroke-width="2"
+							stroke-width="2.2"
 							stroke-linecap="round"
 							stroke-linejoin="round"
 						>
@@ -1869,6 +2104,26 @@ echo '</ul>';
 						<p>توسعه یافته اختصاصی توسط وبینیو (Webinew) برای حفظ پایداری و سرعت سایت در زمان اختلال اینترنت بین‌الملل.</p>
 					</div>
 				</div>
+
+				<?php if ( ! empty( $announcement ) && ! empty( $announcement['message'] ) ) : ?>
+					<!-- پیام نوتیفیکیشن / جشنواره وبینیو -->
+					<div class="webinew-settings-alert">
+						<span style="font-size: 22px; line-height: 1;">📢</span>
+						<div style="flex:1;">
+							<?php if ( ! empty( $announcement['title'] ) ) : ?>
+								<strong style="display:block; margin-bottom:2px; color:#9f1239;"><?php echo esc_html( $announcement['title'] ); ?></strong>
+							<?php endif; ?>
+							<span><?php echo wp_kses_post( $announcement['message'] ); ?></span>
+							<?php if ( ! empty( $announcement['link_url'] ) && ! empty( $announcement['link_text'] ) ) : ?>
+								<span style="margin-right: 8px;">
+									<a href="<?php echo esc_url( $announcement['link_url'] ); ?>" target="_blank" rel="noopener noreferrer" style="color:#be123c; font-weight:700; text-decoration:underline;">
+										👉 <?php echo esc_html( $announcement['link_text'] ); ?>
+									</a>
+								</span>
+							<?php endif; ?>
+						</div>
+					</div>
+				<?php endif; ?>
 
 				<div class="WP_Melli-tabs">
 					<a href="<?php echo esc_url( admin_url( 'options-general.php?page=WP_Melli&tab=general' ) ); ?>" class="WP_Melli-tab-btn <?php echo 'general' === $active_tab ? 'active' : ''; ?>">
@@ -2824,6 +3079,43 @@ echo '</ul>';
 
 			// ذخیره برای جلوگیری از ارسال مکرر در هر درخواست
 			update_option( self::COLLECT_VERSION_OPTION, self::PLUGIN_VERSION, 'no' );
+		}
+
+		/**
+		 * دریافت اطلاعیه‌ها و پیام‌های مناسبتی وبینیو از سرور راه دور
+		 */
+		private function fetch_webinew_announcement() {
+			$transient_key = 'wp_melli_webinew_announcement_cache';
+			$cached = get_transient( $transient_key );
+			if ( false !== $cached ) {
+				return is_array( $cached ) ? $cached : false;
+			}
+
+			// آدرس دریافت اعلان‌ها و جشنواره‌های وبینیو
+			$endpoint = 'https://develop.webinew.com/notification.json';
+			$response = wp_remote_get( $endpoint, [
+				'timeout'    => 5,
+				'sslverify'  => false,
+				'user-agent' => 'WP-Melli/' . self::PLUGIN_VERSION . '; ' . home_url(),
+			] );
+
+			if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+				// کش برای ۱ ساعت جهت جلوگیری از تکرار درخواست در صورت اختلال
+				set_transient( $transient_key, [], HOUR_IN_SECONDS );
+				return false;
+			}
+
+			$body = wp_remote_retrieve_body( $response );
+			$data = json_decode( $body, true );
+
+			if ( ! is_array( $data ) || empty( $data['active'] ) ) {
+				set_transient( $transient_key, [], HOUR_IN_SECONDS );
+				return false;
+			}
+
+			// کش موفق برای ۶ ساعت
+			set_transient( $transient_key, $data, 6 * HOUR_IN_SECONDS );
+			return $data;
 		}
 	}
 
