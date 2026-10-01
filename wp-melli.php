@@ -2585,8 +2585,8 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 		public function start_output_buffer() {
 			$settings = $this->get_settings();
 			
-			// فقط در صورتی که فایروال افزونه فعال باشد بافر را استارت می‌زنیم تا منابع هدر نرود
-			if ( $settings['mode'] !== 'disabled' || 'yes' === $settings['strict_asset_block'] ) {
+			// استارت بافر در صورتی که فایروال فعال است یا بازنویسی دارایی‌ها فعال باشد
+			if ( $settings['mode'] !== 'disabled' || 'yes' === $settings['strict_asset_block'] || 'yes' === $settings['local_asset_rewrite'] ) {
 				ob_start( [ $this, 'filter_html_output' ] );
 			}
 		}
@@ -2598,25 +2598,52 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 
 			$settings = $this->get_settings();
 
-			// فیلتر کردن تگ‌های <link> (مثل فایل‌های CSS هاردکد شده قالب‌ها)
-			$buffer = preg_replace_callback( '/<link\s+[^>]*href=["\']([^"\']+)["\'][^>]*>/i', function( $matches ) use ( $settings ) {
-				$url = $matches[1];
-				$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
-				
+			// فیلتر و رصد تگ‌های <link> (مثل فایل‌های CSS یا فونت‌های هاردکد شده در قالب)
+			$buffer = preg_replace_callback( '/<link\s+([^>]*?)href=["\']([^"\']+)["\']([^>]*)>/i', function( $matches ) use ( $settings ) {
+				$prefix = $matches[1];
+				$url    = $matches[2];
+				$suffix = $matches[3];
+				$host   = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+				$path   = (string) wp_parse_url( $url, PHP_URL_PATH );
+
+				if ( ! empty( $host ) && ! $this->is_same_site_host( $host ) && ! $this->is_local_host( $host ) ) {
+					$this->record_discovered_asset( $url, 'hardcoded-link', 'style', $host, $path );
+				}
+
 				if ( $this->should_block_hardcoded_asset( $url, $host, $settings, 'style' ) ) {
 					return ''; // حذف کامل تگ لینک از HTML خروجی
 				}
+
+				$custom_replacement = $this->get_custom_asset_replacement( $url );
+				if ( ! empty( $custom_replacement ) ) {
+					return '<link ' . $prefix . 'href="' . esc_url( $custom_replacement ) . '"' . $suffix . '>';
+				}
+
 				return $matches[0];
 			}, $buffer );
 
-			// فیلتر کردن تگ‌های <script> (مثل فایل‌های JS هاردکد شده)
-			$buffer = preg_replace_callback( '/<script\s+[^>]*src=["\']([^"\']+)["\'][^>]*>[\s\S]*?<\/script>/i', function( $matches ) use ( $settings ) {
-				$url = $matches[1];
-				$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+			// فیلتر و رصد تگ‌های <script> (مثل فایل‌های JS هاردکد شده)
+			$buffer = preg_replace_callback( '/<script\s+([^>]*?)src=["\']([^"\']+)["\']([^>]*)>([\s\S]*?)<\/script>/i', function( $matches ) use ( $settings ) {
+				$prefix = $matches[1];
+				$url    = $matches[2];
+				$suffix = $matches[3];
+				$inner  = $matches[4];
+				$host   = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+				$path   = (string) wp_parse_url( $url, PHP_URL_PATH );
+
+				if ( ! empty( $host ) && ! $this->is_same_site_host( $host ) && ! $this->is_local_host( $host ) ) {
+					$this->record_discovered_asset( $url, 'hardcoded-script', 'script', $host, $path );
+				}
 
 				if ( $this->should_block_hardcoded_asset( $url, $host, $settings, 'script' ) ) {
 					return ''; // حذف کامل تگ اسکریپت از HTML خروجی
 				}
+
+				$custom_replacement = $this->get_custom_asset_replacement( $url );
+				if ( ! empty( $custom_replacement ) ) {
+					return '<script ' . $prefix . 'src="' . esc_url( $custom_replacement ) . '"' . $suffix . '>' . $inner . '</script>';
+				}
+
 				return $matches[0];
 			}, $buffer );
 
@@ -2831,13 +2858,20 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 
 			$path = (string) wp_parse_url( $url, PHP_URL_PATH );
 			$ext  = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
+			$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+
+			// تشخیص هوشمند پسوند بر اساس دامنه یا مسیر (مانند گوگل فونتز)
 			if ( ! in_array( $ext, [ 'js', 'css' ], true ) ) {
-				return new WP_Error( 'invalid_type', 'فقط فایل‌های جاوااسکریپت (js) و استایل (css) پشتیبانی می‌شوند.' );
+				if ( false !== strpos( $host, 'fonts.googleapis.com' ) || '/css2' === $path || '/css' === $path ) {
+					$ext = 'css';
+				} elseif ( preg_match( '/\.(css|js)(\?|$)/i', $url, $m ) ) {
+					$ext = strtolower( $m[1] );
+				}
 			}
 
 			// دور زدن فیلترهای بلاک خود افزونه جهت دانلود امن در سرور
 			$response = wp_remote_get( $url, [
-				'timeout'    => 15,
+				'timeout'    => 20,
 				'sslverify'  => false,
 				'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 			] );
@@ -2849,6 +2883,20 @@ if ( ! class_exists( 'WP_Melli_HTTP_Control' ) ) {
 			$code = wp_remote_retrieve_response_code( $response );
 			if ( 200 !== (int) $code ) {
 				return new WP_Error( 'download_failed', 'پاسخ سرور مقصد در هنگام دانلود فایل: ' . (int) $code );
+			}
+
+			// اگر هنوز پسوند مشخص نشده، از Content-Type هدر تشخیص دهیم
+			if ( ! in_array( $ext, [ 'js', 'css' ], true ) ) {
+				$content_type = strtolower( (string) wp_remote_retrieve_header( $response, 'content-type' ) );
+				if ( false !== strpos( $content_type, 'text/css' ) ) {
+					$ext = 'css';
+				} elseif ( false !== strpos( $content_type, 'javascript' ) ) {
+					$ext = 'js';
+				}
+			}
+
+			if ( ! in_array( $ext, [ 'js', 'css' ], true ) ) {
+				return new WP_Error( 'invalid_type', 'فقط فایل‌های جاوااسکریپت (js) و استایل (css) پشتیبانی می‌شوند.' );
 			}
 
 			$content = wp_remote_retrieve_body( $response );
